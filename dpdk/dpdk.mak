@@ -1,6 +1,9 @@
 include ../Makefile
-.PHONY:cc_dpdk clean_dpdk
-cc_dpdk:
+.PHONY: clean_dpdk lib_dpdk
+cc_dpdk:lib_dpdk
+	@find ./build/  -name "*.o"  -exec cp {} ../target/dpdk  \;	
+	@ar crv ../target/lib/libdpdk.a ../target/dpdk/*.o > /dev/null
+lib_dpdk:
 	$(MAKE) -C ./build/
 	
 clean_dpdk:
