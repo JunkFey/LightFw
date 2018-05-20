@@ -1,7 +1,7 @@
 /*-
  *   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
+ *   Copyright(c) 2017 Intel Corporation.
  *   All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or without
@@ -31,46 +31,70 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef _RTE_NET_CRC_H_
+#define _RTE_NET_CRC_H_
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+/** CRC polynomials */
+#define CRC32_ETH_POLYNOMIAL 0x04c11db7UL
+#define CRC16_CCITT_POLYNOMIAL 0x1021U
+
+#define CRC_LUT_SIZE 256
+
+/** CRC types */
+enum rte_net_crc_type {
+	RTE_NET_CRC16_CCITT = 0,
+	RTE_NET_CRC32_ETH,
+	RTE_NET_CRC_REQS
+};
+
+/** CRC compute algorithm */
+enum rte_net_crc_alg {
+	RTE_NET_CRC_SCALAR = 0,
+	RTE_NET_CRC_SSE42,
+	RTE_NET_CRC_NEON,
+};
+
+/**
+ * This API set the CRC computation algorithm (i.e. scalar version,
+ * x86 64-bit sse4.2 intrinsic version, etc.) and internal data
+ * structure.
+ *
+ * @param alg
+ *   This parameter is used to select the CRC implementation version.
+ *   - RTE_NET_CRC_SCALAR
+ *   - RTE_NET_CRC_SSE42 (Use 64-bit SSE4.2 intrinsic)
+ *   - RTE_NET_CRC_NEON (Use ARM Neon intrinsic)
+ */
+void
+rte_net_crc_set_alg(enum rte_net_crc_alg alg);
+
+/**
+ * CRC compute API
+ *
+ * @param data
+ *   Pointer to the packet data for CRC computation
+ * @param data_len
+ *   Data length for CRC computation
+ * @param type
+ *   CRC type (enum rte_net_crc_type)
+ *
+ * @return
+ *   CRC value
+ */
+uint32_t
+rte_net_crc_calc(const void *data,
+	uint32_t data_len,
+	enum rte_net_crc_type type);
+
+#ifdef __cplusplus
 }
+#endif
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
 
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_NET_CRC_H_ */

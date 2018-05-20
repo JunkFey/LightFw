@@ -1,7 +1,7 @@
 /*-
  *   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
+ *   Copyright(c) 2017 Cavium, Inc. All rights reserved.
  *   All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or without
@@ -14,7 +14,7 @@
  *       notice, this list of conditions and the following disclaimer in
  *       the documentation and/or other materials provided with the
  *       distribution.
- *     * Neither the name of Intel Corporation nor the names of its
+ *     * Neither the name of Cavium, Inc nor the names of its
  *       contributors may be used to endorse or promote products derived
  *       from this software without specific prior written permission.
  *
@@ -31,46 +31,22 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#ifndef _RTE_PAUSE_H_
+#define _RTE_PAUSE_H_
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+/**
+ * @file
+ *
+ * CPU pause operation.
+ *
+ */
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
-}
+/**
+ * Pause CPU execution for a short while
+ *
+ * This call is intended for tight loops which poll a shared resource or wait
+ * for an event. A short pause within the loop may reduce the power consumption.
+ */
+static inline void rte_pause(void);
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_PAUSE_H_ */

@@ -31,46 +31,45 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef __INCLUDE_RTE_APPROX_H__
+#define __INCLUDE_RTE_APPROX_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @file
+ * RTE Rational Approximation
+ *
+ * Given a rational number alpha with 0 < alpha < 1 and a precision d, the goal
+ * is to find positive integers p, q such that alpha - d < p/q < alpha + d, and
+ * q is minimal.
+ *
+ ***/
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+/**
+ * Find best rational approximation
+ *
+ * @param alpha
+ *   Rational number to approximate
+ * @param d
+ *   Precision for the rational approximation
+ * @param p
+ *   Pointer to pre-allocated space where the numerator of the rational
+ *   approximation will be stored when operation is successful
+ * @param q
+ *   Pointer to pre-allocated space where the denominator of the rational
+ *   approximation will be stored when operation is successful
+ * @return
+ *   0 upon success, error code otherwise
+ */
+int rte_approx(double alpha, double d, uint32_t *p, uint32_t *q);
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+#ifdef __cplusplus
 }
+#endif
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* __INCLUDE_RTE_APPROX_H__ */

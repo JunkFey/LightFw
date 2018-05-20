@@ -1,7 +1,7 @@
 /*-
  *   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
+ *   Copyright(c) 2010-2015 Intel Corporation. All rights reserved.
  *   All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or without
@@ -31,46 +31,53 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#ifndef _RTE_PREFETCH_H_
+#define _RTE_PREFETCH_H_
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+/**
+ * @file
+ *
+ * Prefetch operations.
+ *
+ * This file defines an API for prefetch macros / inline-functions,
+ * which are architecture-dependent. Prefetching occurs when a
+ * processor requests an instruction or data from memory to cache
+ * before it is actually needed, potentially speeding up the execution of the
+ * program.
+ */
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
-}
+/**
+ * Prefetch a cache line into all cache levels.
+ * @param p
+ *   Address to prefetch
+ */
+static inline void rte_prefetch0(const volatile void *p);
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
+/**
+ * Prefetch a cache line into all cache levels except the 0th cache level.
+ * @param p
+ *   Address to prefetch
+ */
+static inline void rte_prefetch1(const volatile void *p);
 
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
+/**
+ * Prefetch a cache line into all cache levels except the 0th and 1th cache
+ * levels.
+ * @param p
+ *   Address to prefetch
+ */
+static inline void rte_prefetch2(const volatile void *p);
 
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
+/**
+ * Prefetch a cache line into all cache levels (non-temporal/transient version)
+ *
+ * The non-temporal prefetch is intended as a prefetch hint that processor will
+ * use the prefetched data only once or short period, unlike the
+ * rte_prefetch0() function which imply that prefetched data to use repeatedly.
+ *
+ * @param p
+ *   Address to prefetch
+ */
+static inline void rte_prefetch_non_temporal(const volatile void *p);
 
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_PREFETCH_H_ */

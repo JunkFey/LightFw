@@ -1,7 +1,7 @@
 /*-
  *   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
+ *   Copyright(c) 2017 Intel Corporation. All rights reserved.
  *   All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or without
@@ -31,46 +31,53 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef __INCLUDE_RTE_ETH_SOFTNIC_H__
+#define __INCLUDE_RTE_ETH_SOFTNIC_H__
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
-}
+#ifndef SOFTNIC_SOFT_TM_NB_QUEUES
+#define SOFTNIC_SOFT_TM_NB_QUEUES			65536
+#endif
+
+#ifndef SOFTNIC_SOFT_TM_QUEUE_SIZE
+#define SOFTNIC_SOFT_TM_QUEUE_SIZE			64
+#endif
+
+#ifndef SOFTNIC_SOFT_TM_ENQ_BSZ
+#define SOFTNIC_SOFT_TM_ENQ_BSZ				32
+#endif
+
+#ifndef SOFTNIC_SOFT_TM_DEQ_BSZ
+#define SOFTNIC_SOFT_TM_DEQ_BSZ				24
+#endif
+
+#ifndef SOFTNIC_HARD_TX_QUEUE_ID
+#define SOFTNIC_HARD_TX_QUEUE_ID			0
+#endif
+
+/**
+ * Run the traffic management function on the softnic device
+ *
+ * This function read the packets from the softnic input queues, insert into
+ * QoS scheduler queues based on mbuf sched field value and transmit the
+ * scheduled packets out through the hard device interface.
+ *
+ * @param portid
+ *    port id of the soft device.
+ * @return
+ *    zero.
+ */
 
 int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
+rte_pmd_softnic_run(uint16_t port_id);
 
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* __INCLUDE_RTE_ETH_SOFTNIC_H__ */

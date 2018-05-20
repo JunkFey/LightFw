@@ -2,6 +2,7 @@
  *   BSD LICENSE
  *
  *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
+ *   Copyright(c) 2013 6WIND.
  *   All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or without
@@ -31,46 +32,64 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#ifndef _RTE_CYCLES_X86_64_H_
+#define _RTE_CYCLES_X86_64_H_
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
+#include "generic/rte_cycles.h"
+
+#ifdef RTE_LIBRTE_EAL_VMWARE_TSC_MAP_SUPPORT
+/* Global switch to use VMWARE mapping of TSC instead of RDTSC */
+extern int rte_cycles_vmware_tsc_map;
+#include <rte_branch_prediction.h>
+#endif
+#include <rte_common.h>
+#include <rte_config.h>
+
+static inline uint64_t
+rte_rdtsc(void)
 {
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
-}
+	union {
+		uint64_t tsc_64;
+		RTE_STD_C11
+		struct {
+			uint32_t lo_32;
+			uint32_t hi_32;
+		};
+	} tsc;
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
+#ifdef RTE_LIBRTE_EAL_VMWARE_TSC_MAP_SUPPORT
+	if (unlikely(rte_cycles_vmware_tsc_map)) {
+		/* ecx = 0x10000 corresponds to the physical TSC for VMware */
+		asm volatile("rdpmc" :
+		             "=a" (tsc.lo_32),
+		             "=d" (tsc.hi_32) :
+		             "c"(0x10000));
+		return tsc.tsc_64;
 	}
+#endif
 
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
+	asm volatile("rdtsc" :
+		     "=a" (tsc.lo_32),
+		     "=d" (tsc.hi_32));
+	return tsc.tsc_64;
 }
+
+static inline uint64_t
+rte_rdtsc_precise(void)
+{
+	rte_mb();
+	return rte_rdtsc();
+}
+
+static inline uint64_t
+rte_get_tsc_cycles(void) { return rte_rdtsc(); }
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _RTE_CYCLES_X86_64_H_ */

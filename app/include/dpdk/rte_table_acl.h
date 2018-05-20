@@ -31,46 +31,65 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef __INCLUDE_RTE_TABLE_ACL_H__
+#define __INCLUDE_RTE_TABLE_ACL_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @file
+ * RTE Table ACL
+ *
+ * This table uses the Access Control List (ACL) algorithm to uniquely
+ * associate data to lookup keys.
+ *
+ * Use-cases: Firewall rule database, etc.
+ *
+ ***/
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#include "rte_acl.h"
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+#include "rte_table.h"
+
+/** ACL table parameters */
+struct rte_table_acl_params {
+	/** Name */
+	const char *name;
+
+	/** Maximum number of ACL rules in the table */
+	uint32_t n_rules;
+
+	/** Number of fields in the ACL rule specification */
+	uint32_t n_rule_fields;
+
+	/** Format specification of the fields of the ACL rule */
+	struct rte_acl_field_def field_format[RTE_ACL_MAX_FIELDS];
+};
+
+/** ACL rule specification for entry add operation */
+struct rte_table_acl_rule_add_params {
+	/** ACL rule priority, with 0 as the highest priority */
+	int32_t  priority;
+
+	/** Values for the fields of the ACL rule to be added to the table */
+	struct rte_acl_field field_value[RTE_ACL_MAX_FIELDS];
+};
+
+/** ACL rule specification for entry delete operation */
+struct rte_table_acl_rule_delete_params {
+	/** Values for the fields of the ACL rule to be deleted from table */
+	struct rte_acl_field field_value[RTE_ACL_MAX_FIELDS];
+};
+
+/** ACL table operations */
+extern struct rte_table_ops rte_table_acl_ops;
+
+#ifdef __cplusplus
 }
+#endif
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif

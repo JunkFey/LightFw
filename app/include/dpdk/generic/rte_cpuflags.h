@@ -31,46 +31,66 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
+#ifndef _RTE_CPUFLAGS_H_
+#define _RTE_CPUFLAGS_H_
+
+/**
+ * @file
+ * Architecture specific API to determine available CPU features at runtime.
+ */
+
+#include "rte_common.h"
 #include <errno.h>
-#include <sys/queue.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+/**
+ * Enumeration of all CPU features supported
+ */
+__extension__
+enum rte_cpu_flag_t;
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
-}
+/**
+ * Get name of CPU flag
+ *
+ * @param feature
+ *     CPU flag ID
+ * @return
+ *     flag name
+ *     NULL if flag ID is invalid
+ */
+__extension__
+const char *
+rte_cpu_get_flag_name(enum rte_cpu_flag_t feature);
 
+/**
+ * Function for checking a CPU flag availability
+ *
+ * @param feature
+ *     CPU flag to query CPU for
+ * @return
+ *     1 if flag is available
+ *     0 if flag is not available
+ *     -ENOENT if flag is invalid
+ */
+__extension__
 int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
+rte_cpu_get_flag_enabled(enum rte_cpu_flag_t feature);
 
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
+/**
+ * This function checks that the currently used CPU supports the CPU features
+ * that were specified at compile time. It is called automatically within the
+ * EAL, so does not need to be used by applications.
+ */
+__rte_deprecated
+void
+rte_cpu_check_supported(void);
 
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
+/**
+ * This function checks that the currently used CPU supports the CPU features
+ * that were specified at compile time. It is called automatically within the
+ * EAL, so does not need to be used by applications.  This version returns a
+ * result so that decisions may be made (for instance, graceful shutdowns).
+ */
+int
+rte_cpu_is_supported(void);
 
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_CPUFLAGS_H_ */

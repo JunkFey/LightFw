@@ -1,7 +1,7 @@
 /*-
  *   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
+ *   Copyright(c) 2015 Intel Corporation. All rights reserved.
  *   All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or without
@@ -31,46 +31,30 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef _RTE_DEV_INFO_H_
+#define _RTE_DEV_INFO_H_
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+/*
+ * Placeholder for accessing device registers
+ */
+struct rte_dev_reg_info {
+	void *data; /**< Buffer for return registers */
+	uint32_t offset; /**< Start register table location for access */
+	uint32_t length; /**< Number of registers to fetch */
+	uint32_t width; /**< Size of device register */
+	uint32_t version; /**< Device version */
+};
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
-}
+/*
+ * Placeholder for accessing device eeprom
+ */
+struct rte_dev_eeprom_info {
+	void *data; /**< Buffer for return eeprom */
+	uint32_t offset; /**< Start eeprom address for access*/
+	uint32_t length; /**< Length of eeprom region to access */
+	uint32_t magic; /**< Device-specific key, such as device-id */
+};
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_DEV_INFO_H_ */

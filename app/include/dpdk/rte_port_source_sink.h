@@ -1,7 +1,7 @@
 /*-
  *   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
+ *   Copyright(c) 2010-2016 Intel Corporation. All rights reserved.
  *   All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or without
@@ -31,46 +31,57 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#ifndef __INCLUDE_RTE_PORT_SOURCE_SINK_H__
+#define __INCLUDE_RTE_PORT_SOURCE_SINK_H__
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+/**
+ * @file
+ * RTE Port Source/Sink
+ *
+ * source: input port that can be used to generate packets
+ * sink: output port that drops all packets written to it
+ *
+ ***/
+
+#include "rte_port.h"
+
+/** source port parameters */
+struct rte_port_source_params {
+	/** Pre-initialized buffer pool */
+	struct rte_mempool *mempool;
+
+	/** The full path of the pcap file to read packets from */
+	const char *file_name;
+	/** The number of bytes to be read from each packet in the
+	 *  pcap file. If this value is 0, the whole packet is read;
+	 *  if it is bigger than packet size, the generated packets
+	 *  will contain the whole packet */
+	uint32_t n_bytes_per_pkt;
+};
+
+/** source port operations */
+extern struct rte_port_in_ops rte_port_source_ops;
+
+/** sink port parameters */
+struct rte_port_sink_params {
+	/** The full path of the pcap file to write the packets to */
+	const char *file_name;
+	/** The maximum number of packets write to the pcap file.
+	 *  If this value is 0, the "infinite" write will be carried
+	 *  out.
+	 */
+	uint32_t max_n_pkts;
+};
+
+/** sink port operations */
+extern struct rte_port_out_ops rte_port_sink_ops;
+
+#ifdef __cplusplus
 }
+#endif
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif

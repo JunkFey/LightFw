@@ -31,46 +31,61 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef _RTE_RANDOM_H_
+#define _RTE_RANDOM_H_
+
+/**
+ * @file
+ *
+ * Pseudo-random Generators in RTE
+ */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#include <stdlib.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
-
-static int
-lcore_hello(__attribute__((unused)) void *arg)
+/**
+ * Seed the pseudo-random generator.
+ *
+ * The generator is automatically seeded by the EAL init with a timer
+ * value. It may need to be re-seeded by the user with a real random
+ * value.
+ *
+ * @param seedval
+ *   The value of the seed.
+ */
+static inline void
+rte_srand(uint64_t seedval)
 {
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+	srand48((long unsigned int)seedval);
 }
 
-int
-main(int argc, char **argv)
+/**
+ * Get a pseudo-random value.
+ *
+ * This function generates pseudo-random numbers using the linear
+ * congruential algorithm and 48-bit integer arithmetic, called twice
+ * to generate a 64-bit value.
+ *
+ * @return
+ *   A pseudo-random value between 0 and (1<<64)-1.
+ */
+static inline uint64_t
+rte_rand(void)
 {
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
+	uint64_t val;
+	val = lrand48();
+	val <<= 32;
+	val += lrand48();
+	return val;
 }
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif /* _RTE_RANDOM_H_ */

@@ -31,46 +31,101 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+/**
+ * @file
+ * Definitions of DPDK version numbers
+ */
+
+#ifndef _RTE_VERSION_H_
+#define _RTE_VERSION_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#include <string.h>
+#include <stdio.h>
+#include <rte_common.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+/**
+ * String that appears before the version number
+ */
+#define RTE_VER_PREFIX "DPDK"
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
+/**
+ * Major version/year number i.e. the yy in yy.mm.z
+ */
+#define RTE_VER_YEAR 17
+
+/**
+ * Minor version/month number i.e. the mm in yy.mm.z
+ */
+#define RTE_VER_MONTH 11
+
+/**
+ * Patch level number i.e. the z in yy.mm.z
+ */
+#define RTE_VER_MINOR 2
+
+/**
+ * Extra string to be appended to version number
+ */
+#define RTE_VER_SUFFIX ""
+
+/**
+ * Patch release number
+ *   0-15 = release candidates
+ *   16   = release
+ */
+#define RTE_VER_RELEASE 16
+
+/**
+ * Macro to compute a version number usable for comparisons
+ */
+#define RTE_VERSION_NUM(a,b,c,d) ((a) << 24 | (b) << 16 | (c) << 8 | (d))
+
+/**
+ * All version numbers in one to compare with RTE_VERSION_NUM()
+ */
+#define RTE_VERSION RTE_VERSION_NUM( \
+			RTE_VER_YEAR, \
+			RTE_VER_MONTH, \
+			RTE_VER_MINOR, \
+			RTE_VER_RELEASE)
+
+/**
+ * Function returning version string
+ * @return
+ *     string
+ */
+static inline const char *
+rte_version(void)
 {
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+	static char version[32];
+	if (version[0] != 0)
+		return version;
+	if (strlen(RTE_VER_SUFFIX) == 0)
+		snprintf(version, sizeof(version), "%s %d.%02d.%d",
+			RTE_VER_PREFIX,
+			RTE_VER_YEAR,
+			RTE_VER_MONTH,
+			RTE_VER_MINOR);
+	else
+		snprintf(version, sizeof(version), "%s %d.%02d.%d%s%d",
+			RTE_VER_PREFIX,
+			RTE_VER_YEAR,
+			RTE_VER_MONTH,
+			RTE_VER_MINOR,
+			RTE_VER_SUFFIX,
+			RTE_VER_RELEASE < 16 ?
+				RTE_VER_RELEASE :
+				RTE_VER_RELEASE - 16);
+	return version;
 }
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* RTE_VERSION_H */

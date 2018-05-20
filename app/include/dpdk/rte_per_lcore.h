@@ -31,46 +31,49 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#ifndef _RTE_PER_LCORE_H_
+#define _RTE_PER_LCORE_H_
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+/**
+ * @file
+ *
+ * Per-lcore variables in RTE
+ *
+ * This file defines an API for instantiating per-lcore "global
+ * variables" that are environment-specific. Note that in all
+ * environments, a "shared variable" is the default when you use a
+ * global variable.
+ *
+ * Parts of this are execution environment specific.
+ */
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <pthread.h>
+
+/**
+ * Macro to define a per lcore variable "var" of type "type", don't
+ * use keywords like "static" or "volatile" in type, just prefix the
+ * whole macro.
+ */
+#define RTE_DEFINE_PER_LCORE(type, name)			\
+	__thread __typeof__(type) per_lcore_##name
+
+/**
+ * Macro to declare an extern per lcore variable "var" of type "type"
+ */
+#define RTE_DECLARE_PER_LCORE(type, name)			\
+	extern __thread __typeof__(type) per_lcore_##name
+
+/**
+ * Read/write the per-lcore variable value
+ */
+#define RTE_PER_LCORE(name) (per_lcore_##name)
+
+#ifdef __cplusplus
 }
+#endif
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_PER_LCORE_H_ */

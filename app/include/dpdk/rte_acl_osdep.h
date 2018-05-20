@@ -31,46 +31,48 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef _RTE_ACL_OSDEP_H_
+#define _RTE_ACL_OSDEP_H_
+
+/**
+ * @file
+ *
+ * RTE ACL DPDK/OS dependent file.
+ */
+
 #include <stdint.h>
+#include <stddef.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <ctype.h>
+#include <string.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>
 #include <sys/queue.h>
 
+/*
+ * Common defines.
+ */
+
+#define DIM(x) RTE_DIM(x)
+
+#include <rte_common.h>
+#include <rte_vect.h>
 #include <rte_memory.h>
-#include <rte_launch.h>
+#include <rte_log.h>
+#include <rte_memcpy.h>
+#include <rte_prefetch.h>
+#include <rte_byteorder.h>
+#include <rte_branch_prediction.h>
+#include <rte_malloc.h>
 #include <rte_eal.h>
+#include <rte_eal_memconfig.h>
 #include <rte_per_lcore.h>
-#include <rte_lcore.h>
+#include <rte_errno.h>
+#include <rte_string_fns.h>
+#include <rte_cpuflags.h>
 #include <rte_debug.h>
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
-}
-
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_ACL_OSDEP_H_ */

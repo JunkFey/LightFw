@@ -31,46 +31,29 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef _RTE_BYTEORDER_X86_H_
+#error do not include this file directly, use <rte_byteorder.h> instead
+#endif
+
+#ifndef _RTE_BYTEORDER_X86_64_H_
+#define _RTE_BYTEORDER_X86_64_H_
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#include <rte_common.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
-
-static int
-lcore_hello(__attribute__((unused)) void *arg)
+/*
+ * An architecture-optimized byte swap for a 64-bit value.
+ *
+  * Do not use this function directly. The preferred function is rte_bswap64().
+ */
+/* 64-bit mode */
+static inline uint64_t rte_arch_bswap64(uint64_t _x)
 {
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+	register uint64_t x = _x;
+	asm volatile ("bswap %[x]"
+		      : [x] "+r" (x)
+		      );
+	return x;
 }
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_BYTEORDER_X86_64_H_ */

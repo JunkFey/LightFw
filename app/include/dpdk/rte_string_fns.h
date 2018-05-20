@@ -31,46 +31,51 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+/**
+ * @file
+ *
+ * String-related functions as replacement for libc equivalents
+ */
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#ifndef _RTE_STRING_FNS_H_
+#define _RTE_STRING_FNS_H_
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
-}
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/**
+ * Takes string "string" parameter and splits it at character "delim"
+ * up to maxtokens-1 times - to give "maxtokens" resulting tokens. Like
+ * strtok or strsep functions, this modifies its input string, by replacing
+ * instances of "delim" with '\\0'. All resultant tokens are returned in the
+ * "tokens" array which must have enough entries to hold "maxtokens".
+ *
+ * @param string
+ *   The input string to be split into tokens
+ *
+ * @param stringlen
+ *   The max length of the input buffer
+ *
+ * @param tokens
+ *   The array to hold the pointers to the tokens in the string
+ *
+ * @param maxtokens
+ *   The number of elements in the tokens array. At most, maxtokens-1 splits
+ *   of the string will be done.
+ *
+ * @param delim
+ *   The character on which the split of the data will be done
+ *
+ * @return
+ *   The number of tokens in the tokens array.
+ */
 int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
+rte_strsplit(char *string, int stringlen,
+             char **tokens, int maxtokens, char delim);
 
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* RTE_STRING_FNS_H */

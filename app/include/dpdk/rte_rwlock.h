@@ -1,7 +1,7 @@
 /*-
  *   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
+ *   Copyright(c) 2015 Intel Corporation. All rights reserved.
  *   All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or without
@@ -31,46 +31,52 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#ifndef _RTE_RWLOCK_X86_64_H_
+#define _RTE_RWLOCK_X86_64_H_
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
+#include "generic/rte_rwlock.h"
+#include "rte_spinlock.h"
+
+static inline void
+rte_rwlock_read_lock_tm(rte_rwlock_t *rwl)
 {
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+	if (likely(rte_try_tm(&rwl->cnt)))
+		return;
+	rte_rwlock_read_lock(rwl);
 }
 
-int
-main(int argc, char **argv)
+static inline void
+rte_rwlock_read_unlock_tm(rte_rwlock_t *rwl)
 {
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
+	if (unlikely(rwl->cnt))
+		rte_rwlock_read_unlock(rwl);
+	else
+		rte_xend();
 }
+
+static inline void
+rte_rwlock_write_lock_tm(rte_rwlock_t *rwl)
+{
+	if (likely(rte_try_tm(&rwl->cnt)))
+		return;
+	rte_rwlock_write_lock(rwl);
+}
+
+static inline void
+rte_rwlock_write_unlock_tm(rte_rwlock_t *rwl)
+{
+	if (unlikely(rwl->cnt))
+		rte_rwlock_write_unlock(rwl);
+	else
+		rte_xend();
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _RTE_RWLOCK_X86_64_H_ */

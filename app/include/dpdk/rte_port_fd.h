@@ -1,7 +1,7 @@
 /*-
  *   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
+ *   Copyright(c) 2016 Intel Corporation. All rights reserved.
  *   All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or without
@@ -31,46 +31,75 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef __INCLUDE_RTE_PORT_FD_H__
+#define __INCLUDE_RTE_PORT_FD_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @file
+ * RTE Port FD Device
+ *
+ * fd_reader: input port built on top of valid non-blocking file descriptor
+ * fd_writer: output port built on top of valid non-blocking file descriptor
+ *
+ ***/
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#include <rte_mempool.h>
+#include "rte_port.h"
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+/** fd_reader port parameters */
+struct rte_port_fd_reader_params {
+	/** File descriptor */
+	int fd;
+
+	/** Maximum Transfer Unit (MTU) */
+	uint32_t mtu;
+
+	/** Pre-initialized buffer pool */
+	struct rte_mempool *mempool;
+};
+
+/** fd_reader port operations */
+extern struct rte_port_in_ops rte_port_fd_reader_ops;
+
+/** fd_writer port parameters */
+struct rte_port_fd_writer_params {
+	/** File descriptor */
+	int fd;
+
+	/**< Recommended write burst size. The actual burst size can be
+	 * bigger or smaller than this value.
+	 */
+	uint32_t tx_burst_sz;
+};
+
+/** fd_writer port operations */
+extern struct rte_port_out_ops rte_port_fd_writer_ops;
+
+/** fd_writer_nodrop port parameters */
+struct rte_port_fd_writer_nodrop_params {
+	/** File descriptor */
+	int fd;
+
+	/**< Recommended write burst size. The actual burst size can be
+	 * bigger or smaller than this value.
+	 */
+	uint32_t tx_burst_sz;
+
+	/** Maximum number of retries, 0 for no limit */
+	uint32_t n_retries;
+};
+
+/** fd_writer_nodrop port operations */
+extern struct rte_port_out_ops rte_port_fd_writer_nodrop_ops;
+
+#ifdef __cplusplus
 }
+#endif
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif

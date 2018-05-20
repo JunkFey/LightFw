@@ -31,46 +31,52 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef __INCLUDE_RTE_PORT_SCHED_H__
+#define __INCLUDE_RTE_PORT_SCHED_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @file
+ * RTE Port Hierarchical Scheduler
+ *
+ * sched_reader: input port built on top of pre-initialized rte_sched_port
+ * sched_writer: output port built on top of pre-initialized rte_sched_port
+ *
+ ***/
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#include <rte_sched.h>
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+#include "rte_port.h"
+
+/** sched_reader port parameters */
+struct rte_port_sched_reader_params {
+	/** Underlying pre-initialized rte_sched_port */
+	struct rte_sched_port *sched;
+};
+
+/** sched_reader port operations */
+extern struct rte_port_in_ops rte_port_sched_reader_ops;
+
+/** sched_writer port parameters */
+struct rte_port_sched_writer_params {
+	/** Underlying pre-initialized rte_sched_port */
+	struct rte_sched_port *sched;
+
+	/** Recommended burst size. The actual burst size can be bigger or
+	smaller than this value. */
+	uint32_t tx_burst_sz;
+};
+
+/** sched_writer port operations */
+extern struct rte_port_out_ops rte_port_sched_writer_ops;
+
+#ifdef __cplusplus
 }
+#endif
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif

@@ -1,8 +1,8 @@
 /*-
  *   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
- *   All rights reserved.
+ *   Copyright(c) 2017 Brocade Communications Systems, Inc.
+ *   Author: Jan Blunck <jblunck@infradead.org>
  *
  *   Redistribution and use in source and binary forms, with or without
  *   modification, are permitted provided that the following conditions
@@ -14,7 +14,7 @@
  *       notice, this list of conditions and the following disclaimer in
  *       the documentation and/or other materials provided with the
  *       distribution.
- *     * Neither the name of Intel Corporation nor the names of its
+ *     * Neither the name of the copyright holder nor the names of its
  *       contributors may be used to endorse or promote products derived
  *       from this software without specific prior written permission.
  *
@@ -31,46 +31,54 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#ifndef _RTE_ETHDEV_VDEV_H_
+#define _RTE_ETHDEV_VDEV_H_
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#include <rte_config.h>
+#include <rte_malloc.h>
+#include <rte_bus_vdev.h>
+#include <rte_ethdev.h>
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
+/**
+ * @internal
+ * Allocates a new ethdev slot for an ethernet device and returns the pointer
+ * to that slot for the driver to use.
+ *
+ * @param dev
+ *	Pointer to virtual device
+ *
+ * @param private_data_size
+ *	Size of private data structure
+ *
+ * @return
+ *	A pointer to a rte_eth_dev or NULL if allocation failed.
+ */
+static inline struct rte_eth_dev *
+rte_eth_vdev_allocate(struct rte_vdev_device *dev, size_t private_data_size)
 {
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
-}
+	struct rte_eth_dev *eth_dev;
+	const char *name = rte_vdev_device_name(dev);
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
+	eth_dev = rte_eth_dev_allocate(name);
+	if (!eth_dev)
+		return NULL;
 
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
+	if (private_data_size) {
+		eth_dev->data->dev_private = rte_zmalloc_socket(name,
+			private_data_size, RTE_CACHE_LINE_SIZE,
+			dev->device.numa_node);
+		if (!eth_dev->data->dev_private) {
+			rte_eth_dev_release_port(eth_dev);
+			return NULL;
+		}
 	}
 
-	/* call it on master lcore too */
-	lcore_hello(NULL);
+	eth_dev->device = &dev->device;
+	eth_dev->intr_handle = NULL;
 
-	rte_eal_mp_wait_lcore();
-	return 0;
+	eth_dev->data->kdrv = RTE_KDRV_NONE;
+	eth_dev->data->numa_node = dev->device.numa_node;
+	return eth_dev;
 }
+
+#endif /* _RTE_ETHDEV_VDEV_H_ */

@@ -1,7 +1,7 @@
 /*-
  *   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
+ *   Copyright(c) 2017 Intel Corporation. All rights reserved.
  *   All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or without
@@ -31,46 +31,64 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef _RTE_BITRATE_H_
+#define _RTE_BITRATE_H_
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+/**
+ *  Bitrate statistics data structure.
+ *  This data structure is intentionally opaque.
+ */
+struct rte_stats_bitrates;
+
+
+/**
+ * Allocate a bitrate statistics structure
+ *
+ * @return
+ *   - Pointer to structure on success
+ *   - NULL on error (zmalloc failure)
+ */
+struct rte_stats_bitrates *rte_stats_bitrate_create(void);
+
+
+/**
+ * Register bitrate statistics with the metric library.
+ *
+ * @param bitrate_data
+ *   Pointer allocated by rte_stats_create()
+ *
+ * @return
+ *   Zero on success
+ *   Negative on error
+ */
+int rte_stats_bitrate_reg(struct rte_stats_bitrates *bitrate_data);
+
+
+/**
+ * Calculate statistics for current time window. The period with which
+ * this function is called should be the intended sampling window width.
+ *
+ * @param bitrate_data
+ *   Bitrate statistics data pointer
+ *
+ * @param port_id
+ *   Port id to calculate statistics for
+ *
+ * @return
+ *  - Zero on success
+ *  - Negative value on error
+ */
+int rte_stats_bitrate_calc(struct rte_stats_bitrates *bitrate_data,
+			   uint16_t port_id);
+
+#ifdef __cplusplus
 }
+#endif
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_BITRATE_H_ */

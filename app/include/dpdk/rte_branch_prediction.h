@@ -31,46 +31,40 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+/**
+ * @file
+ * Branch Prediction Helpers in RTE
+ */
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#ifndef _RTE_BRANCH_PREDICTION_H_
+#define _RTE_BRANCH_PREDICTION_H_
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
-}
+/**
+ * Check if a branch is likely to be taken.
+ *
+ * This compiler builtin allows the developer to indicate if a branch is
+ * likely to be taken. Example:
+ *
+ *   if (likely(x > 1))
+ *      do_stuff();
+ *
+ */
+#ifndef likely
+#define likely(x)  __builtin_expect((x),1)
+#endif /* likely */
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
+/**
+ * Check if a branch is unlikely to be taken.
+ *
+ * This compiler builtin allows the developer to indicate if a branch is
+ * unlikely to be taken. Example:
+ *
+ *   if (unlikely(x < 1))
+ *      do_stuff();
+ *
+ */
+#ifndef unlikely
+#define unlikely(x)  __builtin_expect((x),0)
+#endif /* unlikely */
 
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_BRANCH_PREDICTION_H_ */

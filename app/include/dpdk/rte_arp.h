@@ -1,8 +1,6 @@
-/*-
- *   BSD LICENSE
+/*   BSD LICENSE
  *
- *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
- *   All rights reserved.
+ *   Copyright(c) 2013 6WIND.
  *
  *   Redistribution and use in source and binary forms, with or without
  *   modification, are permitted provided that the following conditions
@@ -14,7 +12,7 @@
  *       notice, this list of conditions and the following disclaimer in
  *       the documentation and/or other materials provided with the
  *       distribution.
- *     * Neither the name of Intel Corporation nor the names of its
+ *     * Neither the name of 6WIND S.A. nor the names of its
  *       contributors may be used to endorse or promote products derived
  *       from this software without specific prior written permission.
  *
@@ -31,46 +29,55 @@
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <string.h>
+#ifndef _RTE_ARP_H_
+#define _RTE_ARP_H_
+
+/**
+ * @file
+ *
+ * ARP-related defines
+ */
+
 #include <stdint.h>
-#include <errno.h>
-#include <sys/queue.h>
+#include <rte_ether.h>
 
-#include <rte_memory.h>
-#include <rte_launch.h>
-#include <rte_eal.h>
-#include <rte_per_lcore.h>
-#include <rte_lcore.h>
-#include <rte_debug.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static int
-lcore_hello(__attribute__((unused)) void *arg)
-{
-	unsigned lcore_id;
-	lcore_id = rte_lcore_id();
-	printf("hello from core %u\n", lcore_id);
-	return 0;
+/**
+ * ARP header IPv4 payload.
+ */
+struct arp_ipv4 {
+	struct ether_addr arp_sha;  /**< sender hardware address */
+	uint32_t          arp_sip;  /**< sender IP address */
+	struct ether_addr arp_tha;  /**< target hardware address */
+	uint32_t          arp_tip;  /**< target IP address */
+} __attribute__((__packed__));
+
+/**
+ * ARP header.
+ */
+struct arp_hdr {
+	uint16_t arp_hrd;    /* format of hardware address */
+#define ARP_HRD_ETHER     1  /* ARP Ethernet address format */
+
+	uint16_t arp_pro;    /* format of protocol address */
+	uint8_t  arp_hln;    /* length of hardware address */
+	uint8_t  arp_pln;    /* length of protocol address */
+	uint16_t arp_op;     /* ARP opcode (command) */
+#define	ARP_OP_REQUEST    1 /* request to resolve address */
+#define	ARP_OP_REPLY      2 /* response to previous request */
+#define	ARP_OP_REVREQUEST 3 /* request proto addr given hardware */
+#define	ARP_OP_REVREPLY   4 /* response giving protocol address */
+#define	ARP_OP_INVREQUEST 8 /* request to identify peer */
+#define	ARP_OP_INVREPLY   9 /* response identifying peer */
+
+	struct arp_ipv4 arp_data;
+} __attribute__((__packed__));
+
+#ifdef __cplusplus
 }
+#endif
 
-int
-main(int argc, char **argv)
-{
-	int ret;
-	unsigned lcore_id;
-
-	ret = rte_eal_init(argc, argv);
-	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
-
-	/* call lcore_hello() on every slave lcore */
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		rte_eal_remote_launch(lcore_hello, NULL, lcore_id);
-	}
-
-	/* call it on master lcore too */
-	lcore_hello(NULL);
-
-	rte_eal_mp_wait_lcore();
-	return 0;
-}
+#endif /* _RTE_ARP_H_ */
