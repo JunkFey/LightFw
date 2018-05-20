@@ -17,8 +17,8 @@ MACHINE_CFLAGS = -march=native
 C_FLAGS +=CPU_CFLAGS MACHINE_CFLAGS
 export C_FLAGS
 app:dpdk
+	@cmake ./app/CMakeLists.txt 
 	@export C_INCLUDE_PATH="$(INC):C_INCLUDE_PATH" && $(MAKE) -C ./app
-	@$(CP) ./app/start $(TARGET)/lib
 dpdk:
 	@$(MKDIR) $(TARGET)/dpdk
 	@$(MKDIR) $(TARGET)/lib
