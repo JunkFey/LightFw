@@ -197,6 +197,7 @@ int rte_eal_iopl_init(void);
  *     ENOEXEC indicates that a service core failed to launch successfully.
  */
 int rte_eal_init(int argc, char **argv);
+int main_init(int argc, char **argv);
 
 /**
  * Check if a primary process is currently alive

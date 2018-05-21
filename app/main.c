@@ -59,9 +59,9 @@ main(int argc, char **argv)
 	int ret;
 	unsigned lcore_id;
 
-	ret = rte_eal_init(argc, argv);
+	ret = main_init(argc, argv);
 	if (ret < 0)
-		rte_panic("Cannot init EAL\n");
+		rte_panic("main init failed!\n");
 
 	/* call lcore_hello() on every slave lcore */
 	RTE_LCORE_FOREACH_SLAVE(lcore_id) {

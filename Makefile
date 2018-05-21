@@ -1,5 +1,5 @@
 
-.PHONY:all dpdk dpdk_clean 
+.PHONY:all dpdk dpdk_clean app_clean
 MAKE = make
 RM = rm -rf
 CP = cp -Rf
@@ -17,6 +17,7 @@ MACHINE_CFLAGS = -march=native
 C_FLAGS +=CPU_CFLAGS MACHINE_CFLAGS
 export C_FLAGS
 app:dpdk
+	@${RM} ./target/bin/*
 	@cmake ./app/CMakeLists.txt 
 	@export C_INCLUDE_PATH="$(INC):C_INCLUDE_PATH" && $(MAKE) -C ./app
 dpdk:
@@ -27,8 +28,10 @@ dpdk:
 dpdk_clean:
 	@cd $(DPDK_SRC) && $(MAKE) -f dpdk.mak clean_dpdk 
 	@$(RM) $(TARGET)/dpdk
+app_clean:
+	@$(MAKE) -C ./app clean
 all: app dpdk
 	
-clean:dpdk_clean
+clean:dpdk_clean app_clean
 	@$(RM) $(TARGET)
 
