@@ -2,4 +2,6 @@ language: c
 sudo: required
 os: linux
 compiler: gcc
+before_install:
+  - sudo apt-get install -y numactl
 script: make
