@@ -3,5 +3,5 @@ sudo: required
 os: linux
 compiler: gcc
 before_install:
-  - sudo apt-get install -y numactl
+  - sudo apt-get install -y libnuma-dev
 script: make
