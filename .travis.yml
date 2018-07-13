@@ -3,5 +3,5 @@ sudo: required
 os: linux
 compiler: gcc
 before_install:
-  - sudo apt-get install -y libnuma-dev  kernel-devel kernel-head
+  - sudo apt-get install -y libnuma-dev linux-headers-$(uname -r)
 script: make
